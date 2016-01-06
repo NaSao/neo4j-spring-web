@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:jaxws="http://cxf.apache.org/jaxws"  
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+http://www.springframework.org/schema/context
+http://www.springframework.org/schema/context/spring-context-4.1.xsd
+http://www.springframework.org/schema/aop 
+http://www.springframework.org/schema/aop/spring-aop-4.1.xsd
+http://cxf.apache.org/transports/http/configuration 
+http://cxf.apache.org/schemas/configuration/http-conf.xsd  
+http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd 
+http://www.springframework.org/schema/tx
+http://www.springframework.org/schema/tx/spring-tx-4.1.xsd"
+default-lazy-init="true">
+	<context:annotation-config/>
+
+	<aop:config>
+		<aop:pointcut id="services"
+			expression="execution(* com.clz.share.*.service.*.*.*(..))" />
+		<aop:pointcut id="services"
+			expression="execution(* com.clz.share.*.dao.*.*.*(..))" />
+		<aop:pointcut id="services"
+			expression="execution(* com.clz.share.*.converter.*.*.*(..))" />
+	</aop:config>
+	
+	<context:component-scan base-package="com.clz.share"
+		use-default-filters="false">
+		<context:include-filter type="regex"
+			expression="^.*.service.impl.*ServiceImpl$" />
+		<context:include-filter type="regex"
+			expression="^.*.dao.*DaoImpl$" />
+		<context:include-filter type="regex"
+			expression="^.*.converter.*Converter$" />
+	</context:component-scan>
+ 	
+	<!-- datasource -->
+	<context:property-placeholder location="classpath:config.properties" />
+    <bean name="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+        init-method="init" destroy-method="close">
+        <property name="url" value="${mysql.jdbc.url}" />
+        <property name="username" value="${mysql.jdbc.username}" />
+        <property name="password" value="${mysql.jdbc.password}" />
+        <property name="initialSize" value="0" />
+        <property name="maxActive" value="20" />
+        <property name="minIdle" value="0" />
+        <property name="maxWait" value="60000" />
+        <property name="poolPreparedStatements" value="true" />
+        <property name="maxPoolPreparedStatementPerConnectionSize"
+            value="33" />
+        <property name="validationQuery" value="${validationQuery}" />
+        <property name="testOnBorrow" value="false" />
+        <property name="testOnReturn" value="false" />
+        <property name="testWhileIdle" value="true" />
+        <property name="timeBetweenEvictionRunsMillis" value="60000" />
+        <property name="minEvictableIdleTimeMillis" value="25200000" />
+        <property name="removeAbandoned" value="true" />
+        <property name="removeAbandonedTimeout" value="1800" />
+        <property name="logAbandoned" value="true" />
+        <property name="filters" value="mergeStat" />
+    </bean>
+	<!-- datasource end -->
+	
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQL5InnoDBDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.format_sql">true</prop>
+                <prop key="hibernate.hbm2ddl.auto">update</prop>
+            </props>
+        </property>
+        <property name="packagesToScan" value="com.clz.share.*.entity"/>
+        
+    </bean>
+	
+ 	<bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+    
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="select*" read-only="true"/>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="load*" read-only="true"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="query*" read-only="true"/>
+            <tx:method name="read*" read-only="true"/>
+            <tx:method name="sync*"/>
+            <tx:method name="*" propagation="REQUIRED" rollback-for="Exception"/>
+        </tx:attributes>
+    </tx:advice>
+
+	<!-- Security Bean -->
+	<!-- -->
+	<bean class="com.clz.share.sec.config.SecurityConfiguration"/>
+	
+	<bean class="com.clz.share.sec.config.OAuth2ServerConfig"/>
+
+	<!-- -->
+	<bean class="com.clz.share.sec.config.CorsFilter" />
+
+</beans>
